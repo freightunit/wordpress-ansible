@@ -1,0 +1,10 @@
+---
+  - hosts: local
+    connection: local
+    gather_facts: no
+    vars_files:
+      - aws/vars/tags.yml
+      - aws/vars/vpc.yml
+
+    tasks:
+      - include: aws/tasks/vpc.yml

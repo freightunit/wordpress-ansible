@@ -1,0 +1,41 @@
+---
+vpc_name: freightunit
+vpc_region: eu-west-1
+
+public_az_1: "{{ vpc_region }}a"
+public_az_2: "{{ vpc_region }}b"
+private_az: "{{ vpc_region }}c"
+
+vpc_cidr_block: 172.25.0.0/16
+public_cidr_1: 172.25.10.0/24
+public_cidr_2: 172.25.20.0/24
+private_cidr: 172.25.30.0/24
+# Subnets for VPC
+vpc_subnets:
+  - cidr: "{{ public_cidr_1 }}" # Public Subnet-1
+    az: "{{ public_az_1 }}"
+    resource_tags:
+      Name: "{{ vpc_name }}-{{ public_az_1 }}-public-subnet"
+      access: public
+      az: "{{ public_az_2 }}"
+  - cidr: "{{ public_cidr_2 }}" # Public Subnet-2
+    az: "{{ public_az_2 }}"
+    resource_tags:
+      Name: "{{ vpc_name }}-{{ public_az_2 }}-public-subnet"
+      access: public
+      az: "{{ public_az_1 }}"
+  - cidr: "{{ private_cidr }}" # Private Subnet
+    az: "{{ private_az }}"
+    resource_tags:
+      Name: "{{ vpc_name }}-{{ private_az }}-private-subnet"
+      access: private
+      az: "{{ private_az }}"
+
+# route table(s) for subnets inside the VPC
+public_subnet_rt:
+  - subnets:
+      - "{{ public_cidr_1 }}"
+      - "{{ public_cidr_2 }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gw: igw

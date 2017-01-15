@@ -1,0 +1,5 @@
+---
+ENV: prod
+application: wordpress
+server_role: web
+region: eu-west-1
