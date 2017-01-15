@@ -1,0 +1,59 @@
+---
+  - name: Web | create WEB security group
+    local_action:
+      module: ec2_group
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      region: "{{ region }}"
+      vpc_id: "{{ vpc.vpc_id }}"
+      state: present
+      rules: "{{ item.rules }}"
+    with_items: "{{ web_security_groups }}"
+    register: sg
+
+  - name: Web | tag the WEB security group
+    local_action:
+      module: ec2_tag
+      resource: "{{ item.group_id}}"
+      region: "{{ vpc_region }}"
+      state: present
+      tags:
+        Name: "{{ vpc_name }}-{{ item.item.name }}"
+    with_items: "{{ sg.results }}"
+  
+  - name: Web | find ami
+    ec2_ami_find:
+      name: "ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"
+      owner: 099720109477
+      sort: creationDate
+      sort_order: descending
+      sort_end: 1
+      region: "{{ region }}"
+      virtualization_type: hvm
+      no_result_action: fail
+    register: find_ami
+
+  - name: Web | setup ami variable
+    set_fact:
+      ami: "{{ find_ami.results[0].ami_id }}"
+
+  - name: Web | create instances
+    local_action:
+      module: ec2
+      region: "{{ region }}"
+      group: "{{ web_security_groups[0].name }}"
+      keypair: "{{ key_name }}"
+      instance_type: "{{ web_instance_type }}"
+      image: "{{ ami }}"
+      vpc_subnet_id: "{{ item }}"
+      id: "{{ application }}-{{ item }}"
+      wait: True
+      instance_tags:
+        Name: "{{ vpc_name }}_web"
+        Environment: "{{ ENV }}"
+        Role: "{{ server_role }}"
+        Application: "{{ application }}"
+    with_items:
+       - "{{ public_subnet_1 }}"
+       - "{{ public_subnet_2 }}"
+    register: web
