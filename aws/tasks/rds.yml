@@ -1,0 +1,68 @@
+---
+  - name: RDS | create RDS security group
+    local_action:
+      module: ec2_group
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      region: "{{ vpc_region }}"
+      vpc_id: "{{ vpc.vpc_id }}"
+      state: present
+      rules: "{{ item.rules }}"
+    with_items: "{{ rds_security_groups }}"
+    register: sg_rds
+
+  - name: RDS | tag the RDS security group
+    local_action:
+      module: ec2_tag
+      resource: "{{ item.group_id}}"
+      region: "{{ vpc_region }}"
+      state: present
+      tags:
+        Name: "{{ vpc_name }}-{{ item.item.name }}"
+    with_items: "{{ sg_rds.results }}"
+
+  - name: RDS | set the RDS security group id as facts
+    set_fact:
+      rds_security_group: "{{ item.group_id }}"
+    with_items: "{{ sg_rds.results }}"
+
+  - name: RDS | create RDS subnet group
+    local_action:
+      module: rds_subnet_group
+      region: "{{ vpc_region }}"
+      state: present
+      name: "{{ rds_subnet_group }}"
+      description: subnet group for "{{ application }}"-rds
+      subnets:
+        "{{ vpc.subnets | map(attribute='id') | list }}"
+
+  - name: RDS | Provisioning RDS Instance
+    local_action:
+      module: rds
+      command: create
+      region: "{{ vpc_region }}"
+      multi_zone:  no
+      subnet: "{{ rds_subnet_group }}"
+      vpc_security_groups: "{{ rds_security_group }}"
+      instance_name: "{{ rds_instance_name }}"
+      db_engine: "{{ rds_db_engine }}"
+      size: "{{ rds_db_size }}"
+      db_name: "{{ rds_db_name }}"
+      instance_type: "{{ rds_instance_type }}"
+      username: "{{ rds_db_username }}"
+      password: "{{ rds_db_password }}"
+      backup_retention: "{{ backup_retention_period }}"
+      wait: yes
+      tags:
+        Environment: "{{ ENV }}"
+        Application: "{{ application }}"
+    register: rds
+
+  - name: RDS | make sure endpoint uri is up to date
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: endpoint_uri
+      value: "mysql://{{ rds_db_username }}:{{ rds_db_password}}@{{ rds.instance.endpoint }}:{{ rds.instance.port }}"
+

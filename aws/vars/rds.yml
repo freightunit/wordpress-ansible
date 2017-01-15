@@ -1,0 +1,20 @@
+---
+rds_subnet_group: "{{ application }}_rds_subnet_group"
+rds_instance_name: "{{ application }}-{{ ENV }}-rds"
+rds_db_engine: MySQL
+rds_db_size: 20
+rds_db_name: "{{ application }}_{{ vpc_name }}_{{ ENV }}"
+rds_instance_type: db.t2.micro
+rds_db_username: "{{ lookup('env', 'RDS_USERNAME') }}"
+rds_db_password: "{{ lookup('env', 'RDS_PASSWORD') }}"
+backup_retention_period: 7
+
+# RDS security group(s)
+rds_security_groups:
+  - name: web-db
+    description: security group for rds
+    rules:
+      - proto: tcp
+        from_port: 3306
+        to_port: 3306
+        group_name: "{{ web_security_groups[0].name }}"

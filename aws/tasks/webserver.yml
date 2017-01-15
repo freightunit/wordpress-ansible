@@ -9,7 +9,7 @@
       state: present
       rules: "{{ item.rules }}"
     with_items: "{{ web_security_groups }}"
-    register: sg
+    register: sg_web
 
   - name: Web | tag the WEB security group
     local_action:
@@ -19,7 +19,7 @@
       state: present
       tags:
         Name: "{{ vpc_name }}-{{ item.item.name }}"
-    with_items: "{{ sg.results }}"
+    with_items: "{{ sg_web.results }}"
   
   - name: Web | find ami
     ec2_ami_find:
