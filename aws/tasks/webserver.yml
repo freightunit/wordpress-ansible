@@ -67,11 +67,21 @@
       - "{{ public_subnet_2 }}"
     register: web
 
-  - name: Web | Extract instance ids
+  - name: Web | extract instance ids
     set_fact:
       web_instances: "{{ web.results|map(attribute='instances')|map('first')|list }}"
       instances_created: "{{ web|changed }}"
     tags: web
+
+  - name: Web | store instace public ip addresses to hosts file
+    tags: web
+    local_action:
+      module: lineinfile
+      dest: "{{ ENV }}"
+      insertafter: '\[webserver\]'
+      line: "{{ item.public_ip }}"
+      regexp: "{{ item.public_ip }}"
+    with_items: "{{ web_instances }}"
 
   - name: Web | wait for SSH to come up
     tags: web

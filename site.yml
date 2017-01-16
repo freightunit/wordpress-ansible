@@ -17,3 +17,12 @@
       - include: aws/tasks/rds.yml
       - include: aws/tasks/elb.yml
       - include: aws/tasks/route53.yml
+
+  - hosts: webserver
+    tags: deploy
+    become: True
+    remote_user: ubuntu
+    gather_facts: True
+
+    roles:
+      - common
