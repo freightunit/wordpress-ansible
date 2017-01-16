@@ -1,0 +1,87 @@
+---
+  - name: ELB | create ELB security group
+    tags: elb
+    local_action:
+      module: ec2_group
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      region: "{{ vpc_region }}"
+      vpc_id: "{{ vpc.vpc_id }}"
+      state: present
+      rules: "{{ item.rules }}"
+    with_items: "{{ elb_security_groups }}"
+    register: sg_elb
+
+  - name: ELB | tag the ELB security group
+    tags: elb
+    local_action:
+      module: ec2_tag
+      resource: "{{ item.group_id}}"
+      region: "{{ vpc_region }}"
+      state: present
+      tags:
+        Name: "{{ vpc_name }}-{{ item.item.name }}"
+    with_items: "{{ sg_elb.results }}"
+
+  - name: ELB | set the ELB security group id as facts
+    tags: elb
+    set_fact:
+      elb_security_group: "{{ item.group_id}}"
+    with_items: "{{ sg_elb.results }}"
+
+  - name: ELB | set subnets as facts
+    tags: elb
+    set_fact:
+      public_subnet_1: "{{ lookup('ini', 'subnet section=' + region + 'a file=./vpc-state') }}"
+      public_subnet_2: "{{ lookup('ini', 'subnet section=' + region + 'b file=./vpc-state') }}"
+
+  - name: ELB | Ensure load balancer exists
+    tags: elb
+    local_action:
+      module: ec2_elb_lb
+      name: "{{ load_balancer_name }}"
+      security_group_ids: "{{ elb_security_group }}"
+      state: present
+      region: "{{ vpc_region }}"
+      subnets: "{{ public_subnet_1 }},{{ public_subnet_2 }}"
+      purge_subnets: yes
+      cross_az_load_balancing: yes
+      connection_draining_timeout: 60
+      listeners:
+        - protocol: http
+          load_balancer_port: 80
+          instance_port: 80
+      health_check:
+        ping_protocol: http
+        ping_port: 80
+        ping_path: "/"
+        response_timeout: 5
+        interval: 30
+        unhealthy_threshold: 2
+        healthy_threshold: 10
+    register: web_elb
+
+  - name: ELB | find web roles
+    tags: elb
+    ec2_remote_facts:
+      region: "{{ region }}"
+      filters:
+        instance-state-name: running
+        "tag:Name": "{{ vpc_name }}_web"
+    register: remote
+
+  - name: ELB | Adding EC2 instance(s) to the ELB
+    tags: elb
+    local_action:
+      module: ec2_elb
+      region: "{{ vpc_region }}"
+      ec2_elbs: "{{ load_balancer_name }}"
+      instance_id: "{{ item.id }}"
+      state: present
+      wait: Yes
+      wait_timeout: 20
+    with_items: "{{ remote.instances }}"
+    register: elb_added
+    until: "elb_added.module_stderr is not defined"
+    retries: 10
+    delay: 5

@@ -1,9 +1,15 @@
 ---
   - name: VPC | Creating an AWS VPC inside mentioned Region
+    tags:
+      - web
+      - vpc
+      - elb
     local_action: 
       module: ec2_vpc
       region: "{{ region }}"
       state: present
+      dns_hostnames: yes
+      dns_support: yes
       cidr_block: "{{ vpc_cidr_block }}"
       resource_tags:
         Name: "{{ vpc_name }}-vpc"
@@ -11,10 +17,11 @@
       internet_gateway: yes
       route_tables: "{{ public_subnet_rt }}"
     register: vpc
-    tags:
-      - elb
  
   - name: VPC | Write vpc id to state file
+    tags:
+      - web
+      - vpc
     local_action:
       module: ini_file
       dest: ./vpc-state
@@ -23,6 +30,9 @@
       value: "{{ vpc.vpc_id }}"
 
   - name: VPC | Write subnet ids to state file
+    tags:
+      - web
+      - vpc
     local_action:
       module: ini_file
       dest: ./vpc-state
@@ -32,6 +42,9 @@
     with_items: "{{ vpc.subnets }}"
 
   - name: VPC | Write public and private access to state file
+    tags:
+      - web
+      - vpc
     local_action:
       module: ini_file
       dest: ./vpc-state
@@ -41,7 +54,9 @@
     with_items: "{{ vpc.subnets }}"
 
   - name: VPC | Set the public and private subnet id as facts
-    tags: elb
+    tags:
+      - vpc
+      - web
     set_fact:
       vpc_id: "{{ lookup('ini', 'id section=vpc file=./vpc-state') }}"
       public_subnet_1: "{{ lookup('ini', 'subnet section=' + region + 'a file=./vpc-state') }}"

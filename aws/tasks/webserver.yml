@@ -1,5 +1,6 @@
 ---
   - name: Web | create WEB security group
+    tags: web
     local_action:
       module: ec2_group
       name: "{{ item.name }}"
@@ -12,6 +13,7 @@
     register: sg_web
 
   - name: Web | tag the WEB security group
+    tags: web
     local_action:
       module: ec2_tag
       resource: "{{ item.group_id}}"
@@ -22,6 +24,7 @@
     with_items: "{{ sg_web.results }}"
   
   - name: Web | find ami
+    tags: web
     ec2_ami_find:
       name: "ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"
       owner: 099720109477
@@ -34,10 +37,12 @@
     register: find_ami
 
   - name: Web | setup ami variable
+    tags: web
     set_fact:
       ami: "{{ find_ami.results[0].ami_id }}"
 
   - name: Web | create instances
+    tags: web
     local_action:
       module: ec2
       region: "{{ region }}"
@@ -48,12 +53,42 @@
       vpc_subnet_id: "{{ item }}"
       id: "{{ application }}-{{ item }}"
       wait: True
+      assign_public_ip: yes
+      user_data: |
+        #!/bin/sh
+        sudo apt-get install nginx -y
       instance_tags:
         Name: "{{ vpc_name }}_web"
         Environment: "{{ ENV }}"
         Role: "{{ server_role }}"
         Application: "{{ application }}"
     with_items:
-       - "{{ public_subnet_1 }}"
-       - "{{ public_subnet_2 }}"
+      - "{{ public_subnet_1 }}"
+      - "{{ public_subnet_2 }}"
     register: web
+
+  - name: Web | Extract instance ids
+    set_fact:
+      web_instances: "{{ web.results|map(attribute='instances')|map('first')|list }}"
+      instances_created: "{{ web|changed }}"
+    tags: web
+
+  - debug: var=instances_created
+    tags: web
+
+  - name: Web | wait for SSH to come up
+    tags: web
+    wait_for:
+      host: "{{ item.public_dns_name }}"
+      port: 22
+      timeout: 320
+      state: started
+    with_items: "{{ web_instances }}"
+    when: instances_created
+
+  - name: Create SSH Group to login dynamically to EC2 Instance(s)
+    tags: web
+    add_host:
+      hostname: "{{ item.public_ip }}"
+      groupname: webserver
+    with_items: "{{ web_instances }}"
