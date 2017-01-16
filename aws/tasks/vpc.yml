@@ -4,6 +4,7 @@
       - web
       - vpc
       - elb
+      - routes
     local_action: 
       module: ec2_vpc
       region: "{{ region }}"

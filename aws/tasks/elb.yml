@@ -1,6 +1,8 @@
 ---
   - name: ELB | create ELB security group
-    tags: elb
+    tags:
+      - elb
+      - routes
     local_action:
       module: ec2_group
       name: "{{ item.name }}"
@@ -24,19 +26,25 @@
     with_items: "{{ sg_elb.results }}"
 
   - name: ELB | set the ELB security group id as facts
-    tags: elb
+    tags:
+      - elb
+      - routes
     set_fact:
       elb_security_group: "{{ item.group_id}}"
     with_items: "{{ sg_elb.results }}"
 
   - name: ELB | set subnets as facts
-    tags: elb
+    tags:
+      - elb
+      - routes
     set_fact:
       public_subnet_1: "{{ lookup('ini', 'subnet section=' + region + 'a file=./vpc-state') }}"
       public_subnet_2: "{{ lookup('ini', 'subnet section=' + region + 'b file=./vpc-state') }}"
 
   - name: ELB | Ensure load balancer exists
-    tags: elb
+    tags:
+      - elb
+      - routes
     local_action:
       module: ec2_elb_lb
       name: "{{ load_balancer_name }}"

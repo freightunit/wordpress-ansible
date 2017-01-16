@@ -1,0 +1,26 @@
+---
+  - name: Update Route53 Record for main domain
+    tags: routes
+    route53:
+      command: create
+      overwrite: yes
+      zone: "{{ domain }}"
+      record: "{{ domain }}"
+      type: A
+      alias: True
+      alias_hosted_zone_id: "{{ web_elb.elb.hosted_zone_id }}"
+      ttl: 60
+      value: "{{ web_elb.elb.dns_name }}"
+      alias_evaluate_target_health: True
+    register: routes
+
+  - name: Update Route53 Record for main WWW subdomain
+    tags: routes
+    route53:
+      command: create
+      overwrite: yes
+      zone: "{{ domain }}"
+      record: "www.{{ domain }}"
+      type: CNAME
+      ttl: 60
+      value: "{{ web_elb.elb.dns_name }}"

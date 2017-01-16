@@ -73,9 +73,6 @@
       instances_created: "{{ web|changed }}"
     tags: web
 
-  - debug: var=instances_created
-    tags: web
-
   - name: Web | wait for SSH to come up
     tags: web
     wait_for:
