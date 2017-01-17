@@ -64,5 +64,44 @@
       dest: ./vpc-state
       section: rds
       option: endpoint_uri
-      value: "mysql://{{ rds_db_username }}:{{ rds_db_password}}@{{ rds.instance.endpoint }}:{{ rds.instance.port }}"
+      value: "mysql://{{ rds_db_username }}:{{ rds_db_password }}@{{ rds.instance.endpoint }}:{{ rds.instance.port }}"
 
+  - name: RDS | store hostname
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: hostname
+      value: "{{ rds.instance.endpoint }}"
+
+  - name: RDS | store port
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: port
+      value: "{{ rds.instance.port }}"
+
+  - name: RDS | store db name
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: name
+      value: "{{ rds_db_name }}"
+
+  - name: RDS | store username
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: username
+      value: "{{ rds_db_username }}"
+
+  - name: RDS | store password
+    local_action:
+      module: ini_file
+      dest: ./vpc-state
+      section: rds
+      option: password
+      value: "{{ rds_db_password }}"

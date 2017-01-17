@@ -1,0 +1,7 @@
+---
+website_name: freightunit.com
+wordpress_dir: /var/www
+wordpress_url: http://wordpress.org/latest.tar.gz
+connections: 1024 #Nginx Connection
+
+ 

@@ -1,0 +1,104 @@
+--- 
+  - name: "Check that {{ wordpress_dir }} exist"
+    stat:
+      path: "{{ wordpress_dir }}"
+    register: dir_exists
+    tags: deploy
+  
+  - name: "Check whether {{ wordpress_dir }}/{{ website_name }} exist"
+    stat:
+      path: "{{ wordpress_dir }}/{{ website_name }}"
+    register: wordpress_exists
+    tags: deploy
+ 
+  - name: "Create wordpress directory at {{ wordpress_dir }}"
+    file:
+      path: "{{ wordpress_dir }}"
+      state: directory
+      owner: www-data
+      group: www-data
+      mode: 0755
+      recurse: yes
+    when: wordpress_exists.stat.exists == False
+    tags: deploy
+  
+  - name: Download the latest wordpress
+    get_url:
+      url: "{{ wordpress_url }}"
+      dest: "{{ wordpress_dir }}/latest.tar.gz"
+    when: wordpress_exists.stat.exists == False
+    tags: deploy
+ 
+  - name: Unzip the downloaded wordpress zipped file
+    unarchive:
+      src: "{{ wordpress_dir }}/latest.tar.gz"
+      dest: "{{ wordpress_dir }}"
+      copy: no
+    when: wordpress_exists.stat.exists == False
+    tags: deploy
+
+  - name: Rename the extracted wordpress directory as Website name
+    command: "mv {{ wordpress_dir }}/wordpress {{ wordpress_dir }}/{{ website_name }}"
+    register: dir_rename
+    when: wordpress_exists.stat.exists == False
+    tags: deploy
+
+  - name: set database facts
+    tags: deploy
+    set_fact:
+      db_name: "{{ lookup('ini', 'name section=rds file=./vpc-state') }}"
+      db_hostname: "{{ lookup('ini', 'hostname section=rds file=./vpc-state') }}"
+      db_port: "{{ lookup('ini', 'port section=rds file=./vpc-state') }}"
+      db_username: "{{ lookup('ini', 'username section=rds file=./vpc-state') }}"
+      db_password: "{{ lookup('ini', 'password section=rds file=./vpc-state') }}"
+
+  - name: Copy the "wp-config.php" file inside the {{ website_name }} directory
+    template:
+      src: wp-config.php.j2
+      dest: "{{ wordpress_dir }}/{{ website_name }}/wp-config.php"
+    notify:
+      - Restart Nginx
+    tags: deploy
+
+  - name: prepare upload folder
+    tags: deploy
+    file:
+      path: "{{ wordpress_dir }}/{{ website_name }}/wp-content/uploads"
+      state: directory
+    tags: deploy
+
+  - name: Reset the permission on Website directory
+    file:
+      path: "{{ wordpress_dir }}/{{ website_name }}"
+      state: directory
+      owner: www-data
+      group: www-data
+      recurse: yes
+    tags: deploy
+
+  - name: Disable the Test Nginx Site
+    tags: deploy
+    file:
+      dest: /etc/nginx/sites-enabled/test_site
+      state: absent
+    notify:
+      - Restart Nginx
+
+  - name: "Add the {{ website_name }} config"
+    template:
+      src: virtualhost.conf.j2
+      dest: "/etc/nginx/sites-available/{{ website_name }}"
+      owner: root
+      group: root
+    notify:
+      - Restart Nginx
+    tags: deploy
+
+  - name: "Enable {{ website_name }} Site Config"
+    file:
+      src: "/etc/nginx/sites-available/{{ website_name }}"
+      dest: "/etc/nginx/sites-enabled/{{ website_name }}"
+      state: link
+    notify:
+      - Restart Nginx
+    tags: deploy

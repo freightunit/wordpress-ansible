@@ -87,7 +87,7 @@
       instance_id: "{{ item.id }}"
       state: present
       wait: Yes
-      wait_timeout: 20
+      wait_timeout: 5
     with_items: "{{ remote.instances }}"
     register: elb_added
     until: "elb_added.module_stderr is not defined"
