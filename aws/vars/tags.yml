@@ -3,3 +3,5 @@ ENV: prod
 application: wordpress
 server_role: web
 region: eu-west-1
+load_balancer_name: "{{ vpc_name }}-{{ ENV }}-{{ server_role }}-ELB"
+vpc_name: freightunit

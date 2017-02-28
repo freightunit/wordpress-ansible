@@ -1,5 +1,4 @@
 ---
-load_balancer_name: "{{ vpc_name }}-{{ ENV }}-{{ server_role }}-ELB"
 elb_security_groups:
   - name: "{{ load_balancer_name }}-sg"
     description: "security group for {{ load_balancer_name }}"

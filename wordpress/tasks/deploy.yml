@@ -65,7 +65,6 @@
     file:
       path: "{{ wordpress_dir }}/{{ website_name }}/wp-content/uploads"
       state: directory
-    tags: deploy
 
   - name: Reset the permission on Website directory
     file:
@@ -102,3 +101,10 @@
     notify:
       - Restart Nginx
     tags: deploy
+
+  - name: Create health check php file
+    template:
+      src: healthz.php.j2
+      dest: "{{ wordpress_dir }}/{{ website_name }}/healthz.php"
+      owner: www-data
+      group: www-data

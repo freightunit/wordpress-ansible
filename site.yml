@@ -19,6 +19,8 @@
       - include: aws/tasks/route53.yml
 
   - hosts: webserver
+    vars_files:
+      - aws/vars/tags.yml
     tags: deploy
     become: True
     remote_user: ubuntu

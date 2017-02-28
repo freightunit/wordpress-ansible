@@ -1,7 +1,5 @@
 ---
-vpc_name: freightunit
-vpc_region: eu-west-1
-
+vpc_region: "{{ region }}"
 public_az_1: "{{ vpc_region }}a"
 public_az_2: "{{ vpc_region }}b"
 private_az: "{{ vpc_region }}c"
