@@ -64,7 +64,8 @@
         Application: "{{ application }}"
     with_items:
       - "{{ public_subnet_1 }}"
-      - "{{ public_subnet_2 }}"
+      # we only do one server due to missing nfs config
+      # - "{{ public_subnet_2 }}"
     register: web
 
   - name: Web | extract instance ids
