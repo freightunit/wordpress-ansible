@@ -11,3 +11,7 @@
     github_username: riethmayer
     type: admin
     state: present
+  - username: riteshkedia11
+    github_username: riteshkedia11
+    type: admin
+    state: present
