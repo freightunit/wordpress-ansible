@@ -39,7 +39,6 @@
       - routes
     set_fact:
       public_subnet_1: "{{ lookup('ini', 'subnet section=' + region + 'a file=./vpc-state') }}"
-      public_subnet_2: "{{ lookup('ini', 'subnet section=' + region + 'b file=./vpc-state') }}"
 
   - name: ELB | Ensure load balancer exists
     tags:
@@ -54,7 +53,6 @@
       # we only do one server due to missing NFS config
       subnets:
         - "{{ public_subnet_1 }}"
-        # - "{{ public_subnet_2 }}"
       purge_subnets: yes
       cross_az_load_balancing: yes
       connection_draining_timeout: 60
@@ -65,7 +63,7 @@
       health_check:
         ping_protocol: http
         ping_port: 80
-        ping_path: "/"
+        ping_path: "/healthz.php"
         response_timeout: 5
         interval: 30
         unhealthy_threshold: 2
