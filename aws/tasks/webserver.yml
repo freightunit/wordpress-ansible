@@ -51,7 +51,7 @@
       instance_type: "{{ web_instance_type }}"
       image: "{{ ami }}"
       vpc_subnet_id: "{{ item }}"
-      id: "{{ application }}-{{ item }}"
+      id: "{{ application }}-{{ item }}-1"
       wait: True
       assign_public_ip: yes
       user_data: |
